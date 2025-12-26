@@ -1,6 +1,8 @@
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Sidebar() {
+  const { user } = useAuth();
   return (
     <aside className="w-64 bg-gray-800 text-white">
       <div className="p-4 text-xl font-bold">OpenDesk</div>
@@ -16,6 +18,13 @@ export default function Sidebar() {
               Docs
             </Link>
           </li>
+          {user?.isAdmin && (
+            <li>
+              <Link href="/(dashboard)/admin" className="block px-4 py-2 hover:bg-gray-700">
+                Admin
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
     </aside>

@@ -22,13 +22,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
-      // TODO: Validate token or fetch user profile
+      const decoded = decodeJwt(token);
+      if (decoded) setUser({ id: decoded.sub || decoded.userId, email: decoded.email, isAdmin: decoded.isAdmin });
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   }, []);
 
   const login = (token: string) => {
     localStorage.setItem('token', token);
     setIsAuthenticated(true);
+    const decoded = decodeJwt(token);
+    if (decoded) setUser({ id: decoded.sub || decoded.userId, email: decoded.email, isAdmin: decoded.isAdmin });
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     router.push('/drive');
   };
 
@@ -45,6 +50,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     </AuthContext.Provider>
   );
 };
+
+function decodeJwt(token: string) {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const payload = parts[1];
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return decoded;
+  } catch (e) {
+    return null;
+  }
+}
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
