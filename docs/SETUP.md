@@ -258,6 +258,16 @@ npx prisma migrate deploy
 npx prisma db push
 ```
 
+### Admin creation and seeding
+
+This repository does not create a default admin user automatically. Instead, the first user to register via the API or web UI is granted admin privileges.
+
+- To create the first admin interactively: register a new account at the web UI or POST to `http://localhost:3001/auth/register`.
+- The registration response for the first user will include an `adminWarning` message; the frontend shows this to make you aware that this account is an admin.
+- If you need deterministic provisioning (CI or scripted installs), create an upsert script using the Prisma client that sets `isAdmin: true` and run it after migrations.
+
+If you previously relied on `prisma db seed`, remove or update that workflow; automatic seeding of a default admin is intentionally disabled.
+
 ### View Database State
 
 ```bash

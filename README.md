@@ -120,6 +120,8 @@ opendesk/
 - **CORS Enabled**: Cross-origin requests supported for browser clients
 - **Environment Variables**: Sensitive credentials (JWT_SECRET, DB_PASSWORD) must be set via `.env`
 
+**Admin creation:** The project does not seed a default admin. The first user that registers will be granted admin privileges and the registration response will include a warning. This avoids shipping default credentials—rotate and secure admin accounts after initial setup.
+
 ### 📚 Documentation
 
 - **[Setup Guide](docs/SETUP.md)** — Installation, environment configuration, and local development

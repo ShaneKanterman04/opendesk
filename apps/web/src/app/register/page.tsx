@@ -10,14 +10,21 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const [error, setError] = useState('');
+  const [adminWarning, setAdminWarning] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3001/auth/register', {
+      const res = await axios.post('http://localhost:3001/auth/register', {
         email,
         password,
       });
+
+      if (res.data?.adminWarning) {
+        setAdminWarning(res.data.adminWarning);
+        return;
+      }
+
       router.push('/login');
     } catch (err) {
       setError('Registration failed');
@@ -29,6 +36,18 @@ export default function RegisterPage() {
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
         <h2 className="mb-6 text-center text-2xl font-bold text-gray-900">Register for OpenDesk</h2>
         {error && <p className="mb-4 text-red-500">{error}</p>}
+        {adminWarning && (
+          <div className="mb-4 rounded border border-yellow-300 bg-yellow-50 p-3 text-yellow-800">
+            <p className="mb-2 font-semibold">Admin created</p>
+            <p className="text-sm">{adminWarning}</p>
+            <button
+              onClick={() => router.push('/login')}
+              className="mt-3 rounded bg-blue-500 px-3 py-1 text-white"
+            >
+              Continue to Login
+            </button>
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="mb-2 block text-sm font-bold text-gray-700">Email</label>
