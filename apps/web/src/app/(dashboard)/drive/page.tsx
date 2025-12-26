@@ -182,12 +182,31 @@ export default function DrivePage() {
           <div key={file.id} className="rounded border bg-white p-4 hover:shadow-md">
             <div className="text-4xl text-gray-400">📄</div>
             <div className="mt-2 truncate font-medium">{file.name}</div>
-            <button
-              onClick={() => handleDownload(file.id, file.name)}
-              className="mt-2 text-sm text-blue-500 hover:underline"
-            >
-              Download
-            </button>
+            <div className="mt-2 flex gap-4 items-center">
+              <button
+                onClick={() => handleDownload(file.id, file.name)}
+                className="text-sm text-blue-500 hover:underline"
+              >
+                Download
+              </button>
+              <button
+                onClick={async () => {
+                  const ok = window.confirm(`Delete "${file.name}"? This will move it to Trash.`);
+                  if (!ok) return;
+                  try {
+                    const token = localStorage.getItem('token');
+                    await axios.delete(`${apiBaseUrl}/drive/file/${file.id}`, { headers: { Authorization: `Bearer ${token}` } });
+                    fetchContents(currentFolder || undefined);
+                  } catch (err) {
+                    console.error('Delete failed', err);
+                    alert('Delete failed');
+                  }
+                }}
+                className="text-sm text-red-500 hover:underline"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         ))}
 
