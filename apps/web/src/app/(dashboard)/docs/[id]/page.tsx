@@ -23,8 +23,10 @@ export default function DocPage() {
   if (!doc) return <div>Loading...</div>;
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-bold">{doc.title}</h1>
+    <div className="flex flex-1 flex-col min-h-0">
+      <div className="p-6 pb-0">
+        <h1 className="mb-4 text-2xl font-bold">{doc.title}</h1>
+      </div>
       <Editor docId={doc.id} initialContent={doc.content} />
     </div>
   );

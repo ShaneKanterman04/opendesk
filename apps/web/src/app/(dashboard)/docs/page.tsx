@@ -39,7 +39,7 @@ export default function DocsListPage() {
   };
 
   return (
-    <div>
+    <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold">My Documents</h2>
         <button

@@ -92,7 +92,7 @@ export default function DrivePage() {
   };
 
   return (
-    <div>
+    <div className="p-8">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-primary">My Drive</h2>
         <div className="flex gap-2">
