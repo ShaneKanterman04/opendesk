@@ -17,12 +17,6 @@ export class DriveService {
     const files = await this.prisma.file.findMany({
       where: { ownerId: userId, folderId: folderId || null },
     });
-    
-    // Generate presigned URLs for files
-    const filesWithUrls = await Promise.all(files.map(async (file) => ({
-      ...file,
-      url: await this.storage.getPresignedGetUrl(file.key),
-    })));
 
     // Include documents in the drive listing for the folder
     const docs = await this.prisma.document.findMany({
@@ -30,7 +24,7 @@ export class DriveService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return { folders, files: filesWithUrls, docs };
+    return { folders, files, docs };
   }
 
   async createFolder(userId: string, name: string, parentId?: string) {

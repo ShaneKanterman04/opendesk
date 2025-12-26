@@ -9,28 +9,29 @@ interface Folder {
   name: string;
 }
 
-interface File {
+interface FileItem {
   id: string;
   name: string;
-  url: string;
 }
 
 export default function DrivePage() {
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [docs, setDocs] = useState<{ id: string; title: string }[]>([]);
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const { user } = useAuth();
 
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
   const fetchContents = async (folderId?: string) => {
     const token = localStorage.getItem('token');
-    const res = await axios.get(`http://localhost:3001/drive/list`, {
+    const res = await axios.get(`${apiBaseUrl}/drive/list`, {
       params: { folderId },
       headers: { Authorization: `Bearer ${token}` },
     });
     setFolders(res.data.folders);
-    setFiles(res.data.files);
+    setFiles((res.data.files || []).map((file: any) => ({ id: file.id, name: file.name })));
     setDocs(res.data.docs || []);
     setCurrentFolder(folderId || null);
   };
@@ -48,7 +49,7 @@ export default function DrivePage() {
     try {
       // 1. Init upload
       const initRes = await axios.post(
-        'http://localhost:3001/drive/upload/init',
+        `${apiBaseUrl}/drive/upload/init`,
         {
           name: file.name,
           size: file.size,
@@ -58,13 +59,22 @@ export default function DrivePage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 2. Upload to MinIO
-      const fileBlob = new Blob([file], { type: file.type });
-      await axios.put(initRes.data.uploadUrl, fileBlob);
+      // 2. Upload file via API (backend streams to storage)
+      const formData = new FormData();
+      formData.append('file', file);
+      await axios.post(
+        `${apiBaseUrl}/drive/upload/${initRes.data.file.id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       // 3. Finalize (optional, but good practice)
       await axios.post(
-        'http://localhost:3001/drive/upload/finalize',
+        `${apiBaseUrl}/drive/upload/finalize`,
         { fileId: initRes.data.file.id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -86,7 +96,7 @@ export default function DrivePage() {
     if (!name) return;
     const token = localStorage.getItem('token');
     await axios.post(
-      'http://localhost:3001/drive/folders',
+      `${apiBaseUrl}/drive/folders`,
       { name, parentId: currentFolder },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -110,7 +120,7 @@ export default function DrivePage() {
               if (!title) return;
               const token = localStorage.getItem('token');
               await axios.post(
-                'http://localhost:3001/docs',
+                `${apiBaseUrl}/docs`,
                 { title, folderId: currentFolder },
                 { headers: { Authorization: `Bearer ${token}` } }
               );
@@ -151,7 +161,7 @@ export default function DrivePage() {
             <div className="text-4xl text-gray-400">📄</div>
             <div className="mt-2 truncate font-medium">{file.name}</div>
             <a
-              href={file.url}
+              href={`${apiBaseUrl}/drive/file/${file.id}`}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-2 block text-sm text-blue-500 hover:underline"
