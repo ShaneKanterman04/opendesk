@@ -4,3 +4,4 @@ dist
 build
 .turbo
 .DS_Store
+.github
