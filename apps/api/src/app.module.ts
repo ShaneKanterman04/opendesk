@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { StorageModule } from './storage/storage.module';
 import { DriveModule } from './drive/drive.module';
 import { DocsModule } from './docs/docs.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DocsModule } from './docs/docs.module';
     StorageModule,
     DriveModule,
     DocsModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [],
