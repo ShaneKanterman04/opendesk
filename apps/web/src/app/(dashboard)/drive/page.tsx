@@ -59,7 +59,8 @@ export default function DrivePage() {
       );
 
       // 2. Upload to MinIO
-      await axios.put(initRes.data.uploadUrl, file, {
+      const fileBuffer = await file.arrayBuffer();
+      await axios.put(initRes.data.uploadUrl, fileBuffer, {
         headers: { 'Content-Type': file.type },
       });
 
