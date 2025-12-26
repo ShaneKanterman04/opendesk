@@ -48,9 +48,11 @@ model File {
   owner     User     @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft-delete timestamp
 
   @@map("files")
-}
+  @@index([deletedAt])
+} 
 
 model Document {
   id        String   @id @default(uuid())
@@ -63,10 +65,12 @@ model Document {
   folder    Folder?  @relation(fields: [folderId], references: [id])
   // Per-document settings such as theme, fontSize, fontFamily
   settings  Json?
+  deletedAt DateTime? // Soft-delete timestamp
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("documents")
   @@index([ownerId, folderId])
-}
+  @@index([deletedAt])
+} 

@@ -48,4 +48,26 @@ export class StorageService implements OnModuleInit {
   async getObjectStream(objectName: string) {
     return await (this.minioClient as any).getObject(this.bucketName, objectName);
   }
+
+  async removeObject(objectName: string) {
+    // Attempt delete with simple retry/backoff
+    const maxAttempts = 3;
+    let attempt = 0;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    while (attempt < maxAttempts) {
+      try {
+        await (this.minioClient as any).removeObject(this.bucketName, objectName);
+        return;
+      } catch (err) {
+        attempt++;
+        if (attempt >= maxAttempts) {
+          throw err;
+        }
+        // exponential backoff
+        await sleep(100 * Math.pow(2, attempt));
+      }
+    }
+  }
 }
+

@@ -8,7 +8,7 @@ describe('DriveService', () => {
   let service: DriveService;
   const mockPrisma: Partial<any> = {
     folder: { findMany: jest.fn() },
-    file: { findMany: jest.fn() },
+    file: { findMany: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     document: { findMany: jest.fn() },
   };
   const mockStorage: Partial<any> = { getPresignedGetUrl: jest.fn() };
@@ -35,5 +35,23 @@ describe('DriveService', () => {
       expect.objectContaining({ where: expect.objectContaining({ ownerId: 'user1', folderId: null }) })
     );
     expect(res.docs).toEqual([{ id: 'doc1', title: 'Doc' }]);
+  });
+
+  describe('deleteFile', () => {
+    it('soft-deletes a file when owned by user', async () => {
+      const file = { id: 'f1', ownerId: 'user1' };
+      (mockPrisma.file.findUnique as jest.Mock).mockResolvedValue(file);
+      (mockPrisma.file.update as jest.Mock).mockResolvedValue({ ...file, deletedAt: new Date() });
+
+      const res = await service.deleteFile('user1', 'f1');
+      expect(mockPrisma.file.findUnique).toHaveBeenCalledWith({ where: { id: 'f1' } });
+      expect(mockPrisma.file.update).toHaveBeenCalledWith({ where: { id: 'f1' }, data: expect.objectContaining({ deletedAt: expect.any(Date) }) });
+      expect(res).toEqual(expect.objectContaining({ id: 'f1' }));
+    });
+
+    it('throws NotFoundException when file does not exist or not owned', async () => {
+      (mockPrisma.file.findUnique as jest.Mock).mockResolvedValue(null);
+      await expect(service.deleteFile('user1', 'missing')).rejects.toThrow();
+    });
   });
 });

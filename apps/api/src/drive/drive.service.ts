@@ -78,4 +78,15 @@ export class DriveService {
     const file = await this.findFileForUser(userId, fileId);
     return this.storage.getObjectStream(file.key);
   }
+
+  async deleteFile(userId: string, fileId: string) {
+    // Soft-delete: set deletedAt to now (GC will remove objects after grace period)
+    const file = await this.prisma.file.findUnique({ where: { id: fileId } });
+    if (!file || file.ownerId !== userId) {
+      throw new NotFoundException('File not found');
+    }
+
+    return this.prisma.file.update({ where: { id: fileId }, data: { deletedAt: new Date() } });
+  }
+
 }
