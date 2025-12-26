@@ -32,9 +32,14 @@ describe('DriveService', () => {
 
     const res = await service.listContents('user1', null);
     expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ ownerId: 'user1', folderId: null }) })
+      expect.objectContaining({ where: expect.objectContaining({ ownerId: 'user1', folderId: null, deletedAt: null }) })
     );
     expect(res.docs).toEqual([{ id: 'doc1', title: 'Doc' }]);
+
+    // Files should be requested with deletedAt filter
+    expect(mockPrisma.file.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ ownerId: 'user1', folderId: null, deletedAt: null }) })
+    );
   });
 
   describe('deleteFile', () => {

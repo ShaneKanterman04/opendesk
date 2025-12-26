@@ -15,12 +15,12 @@ export class DriveService {
       where: { ownerId: userId, parentId: folderId || null },
     });
     const files = await this.prisma.file.findMany({
-      where: { ownerId: userId, folderId: folderId || null },
+      where: { ownerId: userId, folderId: folderId || null, deletedAt: null },
     });
 
     // Include documents in the drive listing for the folder
     const docs = await this.prisma.document.findMany({
-      where: { ownerId: userId, folderId: folderId || null },
+      where: { ownerId: userId, folderId: folderId || null, deletedAt: null },
       orderBy: { updatedAt: 'desc' },
     });
 

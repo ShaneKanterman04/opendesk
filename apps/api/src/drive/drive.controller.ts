@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query, Param, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, UseGuards, Request, Query, Param, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { Response } from 'express';
@@ -46,5 +46,10 @@ export class DriveController {
     res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
     res.setHeader('Content-Length', file.size.toString());
     stream.pipe(res);
+  }
+
+  @Delete('file/:fileId')
+  async deleteFile(@Request() req, @Param('fileId') fileId: string) {
+    return this.driveService.deleteFile(req.user.userId, fileId);
   }
 }
