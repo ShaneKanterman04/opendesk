@@ -15,9 +15,7 @@ echo "Postgres reachable, running Prisma migrations..."
 # Use prisma migrate deploy in containers
 npx prisma migrate deploy
 
-echo "Running Prisma seed (if configured)..."
-# Run the Prisma seed command if present
-npx prisma db seed || true
+# No automatic seed: first registered user becomes admin instead
 
 echo "Starting application..."
 exec "$@"

@@ -28,11 +28,27 @@ export class AuthService {
 
   async register(email: string, pass: string) {
     const hashedPassword = await bcrypt.hash(pass, 10);
+
+    // If there are no users yet, make the first registered user an admin.
+    const totalUsers = await this.usersService.count();
+    const makeAdmin = totalUsers === 0;
+
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
-    });
-    const { password, ...result } = user;
-    return result;
+      ...(makeAdmin ? { isAdmin: true } : {}),
+    } as any);
+
+    const { password, ...userWithoutPassword } = user;
+
+    if (makeAdmin) {
+      return {
+        user: userWithoutPassword,
+        adminWarning:
+          'You are the first registered user and have been made an admin. For security, create another admin account and secure this one.',
+      };
+    }
+
+    return { user: userWithoutPassword };
   }
 }
