@@ -91,6 +91,28 @@ export default function DrivePage() {
     }
   };
 
+  const handleDownload = async (fileId: string, fileName: string) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.get(`${apiBaseUrl}/drive/file/${fileId}`, {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Download failed');
+    }
+  };
+
   const createFolder = async () => {
     const name = prompt('Folder name:');
     if (!name) return;
@@ -160,14 +182,12 @@ export default function DrivePage() {
           <div key={file.id} className="rounded border bg-white p-4 hover:shadow-md">
             <div className="text-4xl text-gray-400">📄</div>
             <div className="mt-2 truncate font-medium">{file.name}</div>
-            <a
-              href={`${apiBaseUrl}/drive/file/${file.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 block text-sm text-blue-500 hover:underline"
+            <button
+              onClick={() => handleDownload(file.id, file.name)}
+              className="mt-2 text-sm text-blue-500 hover:underline"
             >
               Download
-            </a>
+            </button>
           </div>
         ))}
 
