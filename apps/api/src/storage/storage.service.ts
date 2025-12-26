@@ -21,31 +21,7 @@ export class StorageService implements OnModuleInit {
       accessKey,
       secretKey,
     });
-
-    // Optional signing-only client that uses the public endpoint (used to generate presigned URLs
-    // that are valid from outside the docker network). We don't call network operations on this
-    // client during module init so it doesn't need to resolve the host at startup.
-    const publicEndpoint = this.configService.get<string>('MINIO_PUBLIC_ENDPOINT');
-    if (publicEndpoint) {
-      try {
-        const parsed = new URL(publicEndpoint);
-        const publicHost = parsed.hostname;
-        const publicPort = parsed.port ? Number(parsed.port) : parsed.protocol === 'https:' ? 443 : 80;
-        const publicUseSSL = parsed.protocol === 'https:';
-        this.signingClient = new Minio.Client({
-          endPoint: publicHost,
-          port: publicPort,
-          useSSL: publicUseSSL,
-          accessKey,
-          secretKey,
-        });
-      } catch (e) {
-        // ignore parse errors
-      }
-    }
   }
-
-  private signingClient?: Minio.Client;
 
   async onModuleInit() {
     const exists = await this.minioClient.bucketExists(this.bucketName);
@@ -55,29 +31,62 @@ export class StorageService implements OnModuleInit {
   }
 
   async getPresignedPutUrl(objectName: string): Promise<string> {
+    let url: string;
     try {
-      const client = (this as any).signingClient || this.minioClient;
-      return await client.presignedPutObject(this.bucketName, objectName, 24 * 60 * 60);
-    } catch (e) {
-      // Fallback to internal client if signing client fails for any reason
+      // Always use the internal minioClient for generating presigned URLs
+      // since signingClient can fail when trying to connect from inside container
+      url = await this.minioClient.presignedPutObject(this.bucketName, objectName, 24 * 60 * 60);
+    } catch (err) {
+      throw err;
+    }
+
+    // Rewrite the URL to use the public endpoint if configured
+    const publicEndpoint = this.configService.get<string>('MINIO_PUBLIC_ENDPOINT');
+    if (publicEndpoint && publicEndpoint !== 'http://minio:9000' && publicEndpoint !== 'http://minio:9000/') {
       try {
-        // eslint-disable-next-line no-console
-        console.warn('Signing client presign failed, falling back to internal minio client:', e);
-        return await this.minioClient.presignedPutObject(this.bucketName, objectName, 24 * 60 * 60);
-      } catch (err) {
-        throw err;
+        const publicUrl = new URL(publicEndpoint);
+        const currentUrl = new URL(url);
+        // Replace the hostname and port with the public endpoint
+        currentUrl.hostname = publicUrl.hostname;
+        currentUrl.port = publicUrl.port;
+        currentUrl.protocol = publicUrl.protocol.replace(':', '');
+        return currentUrl.toString();
+      } catch (e) {
+        // If rewriting fails, return the original URL
+        return url;
       }
     }
+
+    return url;
   }
 
   async getPresignedGetUrl(objectName: string): Promise<string> {
+    let url: string;
     try {
-      const client = (this as any).signingClient || this.minioClient;
-      return await client.presignedGetObject(this.bucketName, objectName, 24 * 60 * 60);
-    } catch (e) {
-      // Fallback
-      return await this.minioClient.presignedGetObject(this.bucketName, objectName, 24 * 60 * 60);
+      // Always use the internal minioClient for generating presigned URLs
+      url = await this.minioClient.presignedGetObject(this.bucketName, objectName, 24 * 60 * 60);
+    } catch (err) {
+      throw err;
     }
+
+    // Rewrite the URL to use the public endpoint if configured
+    const publicEndpoint = this.configService.get<string>('MINIO_PUBLIC_ENDPOINT');
+    if (publicEndpoint && publicEndpoint !== 'http://minio:9000' && publicEndpoint !== 'http://minio:9000/') {
+      try {
+        const publicUrl = new URL(publicEndpoint);
+        const currentUrl = new URL(url);
+        // Replace the hostname and port with the public endpoint
+        currentUrl.hostname = publicUrl.hostname;
+        currentUrl.port = publicUrl.port;
+        currentUrl.protocol = publicUrl.protocol.replace(':', '');
+        return currentUrl.toString();
+      } catch (e) {
+        // If rewriting fails, return the original URL
+        return url;
+      }
+    }
+
+    return url;
   }
 
   async putObject(objectName: string, body: any, contentType?: string) {
