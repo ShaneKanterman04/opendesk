@@ -59,10 +59,8 @@ export default function DrivePage() {
       );
 
       // 2. Upload to MinIO
-      const fileBuffer = await file.arrayBuffer();
-      await axios.put(initRes.data.uploadUrl, fileBuffer, {
-        headers: { 'Content-Type': file.type },
-      });
+      const fileBlob = new Blob([file], { type: file.type });
+      await axios.put(initRes.data.uploadUrl, fileBlob);
 
       // 3. Finalize (optional, but good practice)
       await axios.post(
@@ -73,7 +71,10 @@ export default function DrivePage() {
 
       fetchContents(currentFolder || undefined);
     } catch (err) {
-      console.error(err);
+      console.error('Upload error:', err);
+      if (err instanceof Error) {
+        console.error('Error details:', err.message);
+      }
       alert('Upload failed');
     } finally {
       setUploading(false);

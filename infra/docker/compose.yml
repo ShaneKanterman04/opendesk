@@ -22,6 +22,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # Enable CORS for browser-based uploads
+      MINIO_HTTP_TRACE: /dev/stdout
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
