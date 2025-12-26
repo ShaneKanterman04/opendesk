@@ -1,0 +1,147 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  /* light theme */
+  --background: #f6f7f9;
+  --foreground: #0f1724;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --success: #10b981;
+  --danger: #ef4444;
+  --btn-foreground: #ffffff;
+  --shadow: 0 1px 3px rgba(16,24,40,0.06);
+}
+
+.dark {
+  /* dark theme, toggled via ThemeProvider adding .dark on <html> */
+  --background: #071129;
+  --foreground: #e6eef8;
+  --surface: #0b1220;
+  --card: #0f1724;
+  --muted: #9ca3af;
+  --accent: #60a5fa;
+  --success: #34d399;
+  --danger: #fb7185;
+  --btn-foreground: #071129;
+  --shadow: 0 1px 3px rgba(2,6,23,0.6);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+}
+
+/* Utilities backed by CSS vars to use across the app */
+@layer utilities {
+  .bg-surface { background-color: var(--surface); }
+  .bg-card { background-color: var(--card); }
+  .text-primary { color: var(--foreground); }
+  .text-muted { color: var(--muted); }
+  .bg-accent { background-color: var(--accent); }
+  .text-accent { color: var(--accent); }
+  .btn { @apply inline-flex items-center gap-2 rounded px-3 py-2; box-shadow: var(--shadow); }
+  .btn-primary { background: var(--accent); color: var(--btn-foreground); }
+  .btn-danger { background: var(--danger); color: var(--btn-foreground); }
+  .btn-muted { background: var(--surface); color: var(--foreground); border: 1px solid rgba(0,0,0,0.06); }
+  .prose { color: var(--foreground); }
+}
+
+/* Tiptap specific styles */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  user-select: none;
+  margin-right: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.tiptap blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  font-style: italic;
+}
+
+.tiptap pre {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono);
+}
+
+.tiptap code {
+  background: rgba(0,0,0,0.05);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+.tiptap table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.tiptap table td,
+.tiptap table th {
+  min-width: 1em;
+  border: 1px solid var(--muted);
+  padding: 0.5rem;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap table th {
+  font-weight: bold;
+  text-align: left;
+  background-color: rgba(0,0,0,0.03);
+}
+
+.tiptap table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}

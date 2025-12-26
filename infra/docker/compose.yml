@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: opendesk-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-opendesk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opendesk}
+      POSTGRES_DB: ${POSTGRES_DB:-opendesk}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - opendesk-network
+
+  minio:
+    image: minio/minio
+    container_name: opendesk-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - opendesk-network
+
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+    container_name: opendesk-api
+    depends_on:
+      - postgres
+      - minio
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-opendesk}:${POSTGRES_PASSWORD:-opendesk}@postgres:5432/${POSTGRES_DB:-opendesk}?schema=public"
+      JWT_SECRET: ${JWT_SECRET:-changeme}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # Public-facing MinIO endpoint that clients (browser / external curl) can use
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+    ports:
+      - "3001:3001"
+    networks:
+      - opendesk-network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile
+    container_name: opendesk-web
+    depends_on:
+      - api
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    networks:
+      - opendesk-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  opendesk-network:
+    driver: bridge

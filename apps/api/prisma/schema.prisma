@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  folders   Folder[]
+  files     File[]
+  documents Document[]
+
+  @@map("users")
+}
+
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderHierarchy")
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  files     File[]
+  documents Document[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("folders")
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String
+  size      Int
+  mimeType  String
+  key       String // MinIO object key
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("files")
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  content   Json? // TipTap JSON content
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  // Optional relationship to place documents inside folders (drive)
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  // Per-document settings such as theme, fontSize, fontFamily
+  settings  Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("documents")
+  @@index([ownerId, folderId])
+}
