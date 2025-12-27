@@ -31,6 +31,7 @@ model Folder {
   owner     User     @relation(fields: [ownerId], references: [id])
   files     File[]
   documents Document[]
+  sortOrder Int?     @map("sort_order") // Optional numeric order for folders
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -47,13 +48,15 @@ model File {
   folder    Folder?  @relation(fields: [folderId], references: [id])
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id])
+  sortOrder Int?     @map("sort_order") // Optional numeric order for ordering inside a folder
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime? // Soft-delete timestamp
 
   @@map("files")
   @@index([deletedAt])
-} 
+}
+ 
 
 model Document {
   id        String   @id @default(uuid())
@@ -66,6 +69,7 @@ model Document {
   folder    Folder?  @relation(fields: [folderId], references: [id])
   // Per-document settings such as theme, fontSize, fontFamily
   settings  Json?
+  sortOrder Int?     @map("sort_order") // Optional numeric order for ordering inside a folder
   deletedAt DateTime? // Soft-delete timestamp
 
   createdAt DateTime @default(now())
