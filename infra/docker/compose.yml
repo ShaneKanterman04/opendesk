@@ -12,6 +12,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - opendesk-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-opendesk} -d ${POSTGRES_DB:-opendesk}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 3s
 
   minio:
     image: minio/minio
