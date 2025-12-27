@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards, Request, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, UseGuards, Request, Query, Res, Delete } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DocsService } from './docs.service';
@@ -93,5 +93,10 @@ export class DocsController {
   @Get()
   async list(@Request() req, @Query('folderId') folderId?: string) {
     return this.docsService.list(req.user.userId, folderId);
+  }
+
+  @Delete(':id')
+  async delete(@Request() req, @Param('id') id: string) {
+    return this.docsService.delete(req.user.userId, id);
   }
 }

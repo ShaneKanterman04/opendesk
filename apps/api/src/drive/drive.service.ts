@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { v4 as uuidv4 } from 'uuid';
+
+// Lightweight id generator to avoid ESM uuid dependencies in the test environment
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 
 @Injectable()
 export class DriveService {
@@ -88,7 +92,7 @@ export class DriveService {
   }
 
   async initUpload(userId: string, data: { name: string; size: number; mimeType: string; folderId?: string }) {
-    const key = `${userId}/${uuidv4()}-${data.name}`;
+    const key = `${userId}/${genId()}-${data.name}`;
     const uploadUrl = await this.storage.getPresignedPutUrl(key);
 
     const sortOrder = await this.getNextSortOrderForFolder('File', data.folderId || null);
@@ -140,6 +144,28 @@ export class DriveService {
     }
 
     return this.prisma.file.update({ where: { id: fileId }, data: { deletedAt: new Date() } });
+  }
+
+  async deleteFolder(userId: string, folderId: string) {
+    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
+    if (!folder || folder.ownerId !== userId) throw new NotFoundException('Folder not found');
+
+    // Soft-delete files and documents directly in this folder
+    const files = await this.prisma.file.findMany({ where: { folderId, ownerId: userId } });
+    const docs = await this.prisma.document.findMany({ where: { folderId, ownerId: userId } });
+
+    const updates: any[] = [];
+    for (const f of files) {
+      updates.push(this.prisma.file.update({ where: { id: f.id }, data: { deletedAt: new Date() } }));
+    }
+    for (const d of docs) {
+      updates.push(this.prisma.document.update({ where: { id: d.id }, data: { deletedAt: new Date() } }));
+    }
+
+    // Delete folder record (no deletedAt on folders in schema)
+    updates.push(this.prisma.folder.delete({ where: { id: folderId } }));
+
+    return this.prisma.$transaction(updates);
   }
 
   /** Move an item (file or document) into a folder (folderId can be null for root) */

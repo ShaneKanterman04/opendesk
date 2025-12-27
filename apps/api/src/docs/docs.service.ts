@@ -30,7 +30,7 @@ export class DocsService {
 
   async findOne(userId: string, id: string) {
     const doc = await this.prisma.document.findFirst({
-      where: { id, ownerId: userId },
+      where: { id, ownerId: userId, deletedAt: null },
     });
     if (!doc) throw new NotFoundException();
     return doc;
@@ -49,11 +49,21 @@ export class DocsService {
     });
   }
 
+  async delete(userId: string, id: string) {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc || doc.ownerId !== userId) throw new NotFoundException('Document not found');
+
+    return this.prisma.document.update({ where: { id }, data: { deletedAt: new Date() } });
+  }
+
   async list(userId: string, folderId?: string) {
     const where: any = { ownerId: userId };
     if (folderId !== undefined) {
       where.folderId = folderId || null;
     }
+
+    // Ensure we only return non-deleted documents
+    where.deletedAt = null;
 
     return this.prisma.document.findMany({
       where,

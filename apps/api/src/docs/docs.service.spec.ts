@@ -45,4 +45,15 @@ describe('DocsService', () => {
     );
     expect(res).toEqual([{ id: 'd1' }]);
   });
+
+  it('soft-deletes a document for the owner', async () => {
+    (mockPrisma.document.findUnique as jest.Mock).mockResolvedValue({ id: 'd1', ownerId: 'user1' });
+    (mockPrisma.document.update as jest.Mock).mockResolvedValue({ id: 'd1', deletedAt: new Date() });
+
+    const res = await service.delete('user1', 'd1');
+
+    expect(mockPrisma.document.findUnique).toHaveBeenCalledWith({ where: { id: 'd1' } });
+    expect(mockPrisma.document.update).toHaveBeenCalledWith({ where: { id: 'd1' }, data: { deletedAt: expect.any(Date) } });
+    expect(res).toEqual(expect.objectContaining({ id: 'd1' }));
+  });
 });

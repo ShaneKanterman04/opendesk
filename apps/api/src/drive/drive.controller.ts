@@ -67,4 +67,9 @@ export class DriveController {
   async deleteFile(@Request() req, @Param('fileId') fileId: string) {
     return this.driveService.deleteFile(req.user.userId, fileId);
   }
+
+  @Delete('folder/:folderId')
+  async deleteFolder(@Request() req, @Param('folderId') folderId: string) {
+    return this.driveService.deleteFolder(req.user.userId, folderId);
+  }
 }

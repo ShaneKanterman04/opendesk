@@ -9,7 +9,10 @@ import * as util from 'util';
 const TurndownService = require('turndown');
 // @ts-ignore
 const HTMLtoDOCX = require('html-to-docx');
-import { v4 as uuidv4 } from 'uuid';
+// Lightweight ID generator used for temporary filenames (avoids pulling in uuid module in tests)
+function genTempId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
 // Use server-side generateHTML; require from dist path to avoid TS moduleResolution issues
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 // Server-side HTML generation is handled by the client (editor.getHTML()).
@@ -69,7 +72,7 @@ export class ExportService {
 
   async exportToPdf(html: string): Promise<Buffer> {
     const docxBuffer = await this.exportToDocx(html);
-    const id = uuidv4();
+    const id = genTempId();
     const docxPath = path.join(this.tempDir, `${id}.docx`);
     const pdfPath = path.join(this.tempDir, `${id}.pdf`);
 
