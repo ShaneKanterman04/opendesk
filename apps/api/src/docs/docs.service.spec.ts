@@ -11,7 +11,9 @@ describe('DocsService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
       findMany: jest.fn(),
+      aggregate: jest.fn(),
     },
+    $queryRawUnsafe: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -23,8 +25,10 @@ describe('DocsService', () => {
   });
 
   it('creates document with folderId and settings', async () => {
+    (mockPrisma.$queryRawUnsafe as jest.Mock).mockResolvedValue([{ max: 0 }]);
     (mockPrisma.document.create as jest.Mock).mockResolvedValue({ id: '1', title: 't' });
     const res = await service.create('user1', 'My Doc', 'fold1', { theme: 'dark' });
+    expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalled();
     expect(mockPrisma.document.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ folderId: 'fold1', settings: { theme: 'dark' } }),
