@@ -3,35 +3,50 @@
 
 :root {
   /* light theme */
-  --background: #f6f7f9;
+  --background: #f8fafc; /* Slate 50 */
   --foreground: #0f1724;
   --surface: #ffffff;
   --card: #ffffff;
-  --muted: #6b7280;
-  --accent: #2563eb;
+  --muted: #64748b; /* Slate 500 */
+  --accent: #3b82f6; /* Blue 500 */
+  --accent-hover: #2563eb; /* Blue 600 */
   --success: #10b981;
   --danger: #ef4444;
   --btn-foreground: #ffffff;
-  --shadow: 0 1px 3px rgba(16,24,40,0.06);
+  --sidebar-bg: #0f1724;
+  --sidebar-fg: #f8fafc;
+  --sidebar-hover: #1e293b;
+  --shadow: 0 1px 3px rgba(15, 23, 36, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 36, 0.08), 0 2px 4px -1px rgba(15, 23, 36, 0.04);
 }
 
 .dark {
   /* dark theme, toggled via ThemeProvider adding .dark on <html> */
-  --background: #071129;
-  --foreground: #e6eef8;
-  --surface: #0b1220;
-  --card: #0f1724;
-  --muted: #9ca3af;
-  --accent: #60a5fa;
+  --background: #020617; /* Slate 950 */
+  --foreground: #f8fafc;
+  --surface: #0f1724;
+  --card: #1e293b; /* Slate 800 */
+  --muted: #94a3b8; /* Slate 400 */
+  --accent: #60a5fa; /* Blue 400 */
+  --accent-hover: #3b82f6; /* Blue 500 */
   --success: #34d399;
   --danger: #fb7185;
-  --btn-foreground: #071129;
-  --shadow: 0 1px 3px rgba(2,6,23,0.6);
+  --btn-foreground: #0f1724;
+  --sidebar-bg: #020617;
+  --sidebar-fg: #f8fafc;
+  --sidebar-hover: #1e293b;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-sidebar-bg: var(--sidebar-bg);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -50,10 +65,55 @@ body {
   .text-muted { color: var(--muted); }
   .bg-accent { background-color: var(--accent); }
   .text-accent { color: var(--accent); }
-  .btn { @apply inline-flex items-center gap-2 rounded px-3 py-2; box-shadow: var(--shadow); }
-  .btn-primary { background: var(--accent); color: var(--btn-foreground); }
-  .btn-danger { background: var(--danger); color: var(--btn-foreground); }
-  .btn-muted { background: var(--surface); color: var(--foreground); border: 1px solid rgba(0,0,0,0.06); }
+  
+  .btn { 
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 font-medium transition-all duration-200; 
+  }
+  
+  .btn-primary { 
+    background: var(--accent); 
+    color: var(--btn-foreground); 
+    box-shadow: var(--shadow);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+  
+  .btn-danger { 
+    background: var(--danger); 
+    color: var(--btn-foreground); 
+  }
+  
+  .btn-muted { 
+    background: var(--surface); 
+    color: var(--foreground); 
+    border: 1px solid var(--muted);
+    opacity: 0.8;
+  }
+  .btn-muted:hover {
+    opacity: 1;
+    background: var(--background);
+  }
+
+  .btn-ghost {
+    color: var(--muted);
+  }
+  .btn-ghost:hover {
+    background: var(--background);
+    color: var(--foreground);
+  }
+
+  .card {
+    background-color: var(--card);
+    border: 1px solid transparent;
+    box-shadow: var(--shadow);
+  }
+  .dark .card {
+    border-color: rgba(255,255,255,0.05);
+  }
+
   .prose { color: var(--foreground); }
 }
 

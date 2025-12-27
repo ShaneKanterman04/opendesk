@@ -17,6 +17,10 @@
   "dependencies": {
     "@tiptap/extension-link": "^3.14.0",
     "@tiptap/extension-placeholder": "^3.14.0",
-    "lodash": "^4.17.21"
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lodash": "^4.17.21",
+    "lucide-react": "^0.562.0",
+    "tailwind-merge": "^3.4.0"
   }
 }

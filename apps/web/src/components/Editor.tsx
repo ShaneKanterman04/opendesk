@@ -108,6 +108,20 @@ export default function Editor({ docId, initialContent }: { docId: string; initi
     },
   });
 
+  useEffect(() => {
+    const focusHandler = (e: any) => {
+      try {
+        if (e?.detail === docId && editor) {
+          editor.chain().focus().run();
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    window.addEventListener('focus-doc', focusHandler as EventListener);
+    return () => window.removeEventListener('focus-doc', focusHandler as EventListener);
+  }, [editor, docId]);
+
   const handleExport = async (format: string, destination: string) => {
     try {
       const token = localStorage.getItem('token');
