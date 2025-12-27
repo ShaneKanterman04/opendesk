@@ -15,6 +15,11 @@ export class DriveController {
     return this.driveService.listContents(req.user.userId, folderId);
   }
 
+  @Get('debug')
+  async debug(@Request() req) {
+    return this.driveService.debugQuery();
+  }
+
   @Post('folders')
   async createFolder(@Request() req, @Body() body: { name: string; parentId?: string }) {
     return this.driveService.createFolder(req.user.userId, body.name, body.parentId);
@@ -29,6 +34,16 @@ export class DriveController {
   async finalizeUpload(@Request() req, @Body() body: { fileId: string }) {
     // In a real app, verify MinIO object exists
     return { status: 'ok' };
+  }
+
+  @Post('item/move')
+  async moveItem(@Request() req, @Body() body: { itemType: 'file' | 'doc'; itemId: string; folderId?: string }) {
+    return this.driveService.moveItem(req.user.userId, body.itemType, body.itemId, body.folderId || null);
+  }
+
+  @Post('item/reorder')
+  async reorderItems(@Request() req, @Body() body: { itemType: 'file' | 'doc'; folderId?: string; orderedIds: string[] }) {
+    return this.driveService.reorderItems(req.user.userId, body.itemType, body.folderId || null, body.orderedIds || []);
   }
 
   @Post('upload/:fileId')
