@@ -8,5 +8,6 @@ import { StorageModule } from '../storage/storage.module';
   imports: [StorageModule],
   controllers: [DriveController],
   providers: [DriveService, PrismaService],
+  exports: [DriveService],
 })
 export class DriveModule {}
