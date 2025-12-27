@@ -12,37 +12,50 @@ import {
   useSensor,
   useSensors,
   useDroppable,
+  closestCenter,
+  DragOverlay,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   useSortable,
   arrayMove,
   verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Small helpers / components for DnD
-function FolderCard({ folder, onOpen }: { folder: {id:string; name:string}, onOpen: () => void }){
-  const { isOver, setNodeRef } = useDroppable({ id: `folder-${folder.id}` });
-
-  return (
-    <div ref={setNodeRef} onClick={onOpen} className={`cursor-pointer rounded border bg-card p-4 hover:shadow-md ${isOver? 'ring-2 ring-blue-400': ''}`}>
-      <div className="text-4xl text-yellow-500">📁</div>
-      <div className="mt-2 truncate font-medium">{folder.name}</div>
-    </div>
-  );
-}
-
-function SortableFile({ file, onDownload, onDelete }: { file: {id:string; name:string}, onDownload: (id:string, name:string) => void, onDelete?: () => Promise<void> }){
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `file-${file.id}` });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  } as React.CSSProperties;
-
-  const handleDeleteClick = async () => {
+// Pure UI Component
+function DriveItemUI({
+  type,
+  name,
+  onOpen,
+  onDownload,
+  onDelete,
+  isDragging,
+  isDropTarget,
+  isOverlay,
+  style,
+  setNodeRef,
+  attributes,
+  listeners,
+}: {
+  type: 'folder' | 'file' | 'doc';
+  name: string;
+  onOpen?: () => void;
+  onDownload?: () => void;
+  onDelete?: () => void;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  isOverlay?: boolean;
+  style?: React.CSSProperties;
+  setNodeRef?: (node: HTMLElement | null) => void;
+  attributes?: any;
+  listeners?: any;
+}) {
+  const handleDeleteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!onDelete) return;
-    const ok = window.confirm(`Delete "${file.name}"? This will move it to Trash.`);
+    const ok = window.confirm(`Delete "${name}"? This will move it to Trash.`);
     if (!ok) return;
     try {
       await onDelete();
@@ -52,31 +65,109 @@ function SortableFile({ file, onDownload, onDelete }: { file: {id:string; name:s
     }
   };
 
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDownload?.();
+  };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="rounded border bg-white p-4 hover:shadow-md">
-      <div className="text-4xl text-gray-400">📄</div>
-      <div className="mt-2 truncate font-medium">{file.name}</div>
-      <div className="mt-2 flex gap-4 items-center">
-        <button onClick={() => onDownload(file.id, file.name)} className="text-sm text-blue-500 hover:underline">Download</button>
-        <button onClick={handleDeleteClick} className="text-sm text-red-500 hover:underline">Delete</button>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={type === 'folder' ? onOpen : undefined}
+      className={`
+        relative rounded border bg-card p-4 transition-all
+        ${isDropTarget ? 'ring-2 ring-blue-400 bg-blue-50' : ''}
+        ${type === 'folder' ? 'cursor-pointer' : ''}
+        ${isDragging ? 'opacity-0' : ''}
+        ${isOverlay ? 'scale-95 shadow-xl z-50 cursor-grabbing bg-card' : 'hover:shadow-md'}
+      `}
+    >
+      <div className="text-4xl">
+        {type === 'folder' && '📁'}
+        {type === 'file' && '📄'}
+        {type === 'doc' && '📝'}
       </div>
+      <div className="mt-2 truncate font-medium">{name}</div>
+      
+      {type !== 'folder' && !isOverlay && (
+        <div className="mt-2 flex gap-4 items-center">
+          {type === 'doc' ? (
+            <a href="#" className="text-sm text-blue-500 hover:underline" onClick={(e) => e.stopPropagation()}>Open</a>
+          ) : (
+            <button onClick={handleDownloadClick} className="text-sm text-blue-500 hover:underline">Download</button>
+          )}
+          <button onClick={handleDeleteClick} className="text-sm text-red-500 hover:underline">Delete</button>
+        </div>
+      )}
     </div>
   );
 }
 
-function SortableDoc({ doc }: { doc: {id:string; title:string} }){
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: `doc-${doc.id}` });
+// Sortable Wrapper
+function SortableDriveItem({
+  id,
+  type,
+  name,
+  onOpen,
+  onDownload,
+  onDelete,
+  draggingId,
+}: {
+  id: string;
+  type: 'folder' | 'file' | 'doc';
+  name: string;
+  onOpen?: () => void;
+  onDownload?: () => void;
+  onDelete?: () => void;
+  draggingId?: string | null;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isOver,
+  } = useSortable({ id: `${type}-${id}` });
+
+  const isActiveDrag = draggingId === `${type}-${id}`;
+  
+  // Determine if we should show drop highlight (only for folders when something else is dragged over)
+  // We disable this for folder-on-folder drag to avoid confusion with reordering
+  const isDropTarget = Boolean(type === 'folder' && isOver && draggingId && !isActiveDrag && !draggingId.startsWith('folder-'));
+
+  // We do NOT apply transform if draggingId is set, to prevent reordering visuals
+  // But we DO apply it if it's NOT dragging, to allow animations? 
+  // Actually, if we want "no new sorting", we should just ignore transform when draggingId is present.
+  // But useSortable gives transform for the *active* item too.
+  // If we ignore transform, the list stays static.
+  
   const style = {
-    transform: CSS.Transform.toString(transform),
+    // Only apply transform if we are NOT dragging anything (or if we want animations when not dragging)
+    // But wait, if we don't apply transform, items won't move to make space.
+    // This is what the user wants: "no new sorting ... until user lets go".
+    // So we simply omit transform.
+    // transform: CSS.Transform.toString(transform), 
     transition,
   } as React.CSSProperties;
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="rounded border bg-white p-4 hover:shadow-md">
-      <div className="text-4xl text-indigo-400">📝</div>
-      <div className="mt-2 truncate font-medium">{doc.title}</div>
-      <a href={`/docs/${doc.id}`} className="mt-2 block text-sm text-blue-500 hover:underline">Open</a>
-    </div>
+    <DriveItemUI
+      type={type}
+      name={name}
+      onOpen={onOpen}
+      onDownload={onDownload}
+      onDelete={onDelete}
+      isDragging={isActiveDrag}
+      isDropTarget={isDropTarget}
+      setNodeRef={setNodeRef}
+      style={style}
+      attributes={attributes}
+      listeners={listeners}
+    />
   );
 }
 
@@ -203,70 +294,112 @@ export default function DrivePage() {
   };
 
   // DnD sensors and handlers
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!active) return;
 
-    // Dropped onto a folder
-    if (over?.id && String(over.id).startsWith('folder-')) {
-      const folderId = String(over.id).replace('folder-', '');
-      const activeId = String(active.id);
-      const itemType = activeId.startsWith('file-') ? 'file' : activeId.startsWith('doc-') ? 'doc' : null;
-      if (!itemType) return;
-      const itemId = activeId.replace(/^file-|^doc-/, '');
-      const token = localStorage.getItem('token');
-      try {
-        await axios.post(`${apiBaseUrl}/drive/item/move`, { itemType, itemId, folderId }, { headers: { Authorization: `Bearer ${token}` } });
-        fetchContents(currentFolder || undefined);
-      } catch (err) {
-        console.error('Move failed', err);
-        alert('Move failed');
+    try {
+      // Dropped onto a folder (Move into folder)
+      // Only if we are NOT reordering folders themselves (i.e. active is not a folder)
+      if (over?.id && String(over.id).startsWith('folder-') && !String(active.id).startsWith('folder-')) {
+        const folderId = String(over.id).replace('folder-', '');
+        const activeId = String(active.id);
+        const itemType = activeId.startsWith('file-') ? 'file' : activeId.startsWith('doc-') ? 'doc' : null;
+        if (!itemType) return;
+        const itemId = activeId.replace(/^file-|^doc-/, '');
+        const token = localStorage.getItem('token');
+        try {
+          await axios.post(`${apiBaseUrl}/drive/item/move`, { itemType, itemId, folderId }, { headers: { Authorization: `Bearer ${token}` } });
+          fetchContents(currentFolder || undefined);
+        } catch (err) {
+          console.error('Move failed', err);
+          alert('Move failed');
+        }
+        return;
       }
-      return;
-    }
 
-    // Reordering within files
-    if (over?.id && String(active.id).startsWith('file-') && String(over.id).startsWith('file-')) {
-      const activeId = String(active.id).replace('file-', '');
-      const overId = String(over.id).replace('file-', '');
-      const oldIndex = files.findIndex((f) => f.id === activeId);
-      const newIndex = files.findIndex((f) => f.id === overId);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-      const newFiles = arrayMove(files, oldIndex, newIndex);
-      setFiles(newFiles);
+      // Reordering within folders
+      if (over?.id && String(active.id).startsWith('folder-') && String(over.id).startsWith('folder-')) {
+        const activeId = String(active.id).replace('folder-', '');
+        const overId = String(over.id).replace('folder-', '');
+        const oldIndex = folders.findIndex((f) => f.id === activeId);
+        const newIndex = folders.findIndex((f) => f.id === overId);
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+        const newFolders = arrayMove(folders, oldIndex, newIndex);
+        setFolders(newFolders);
 
-      // Persist order
-      const token = localStorage.getItem('token');
-      try {
-        await axios.post(`${apiBaseUrl}/drive/item/reorder`, { itemType: 'file', folderId: currentFolder || null, orderedIds: newFiles.map(f=>f.id) }, { headers: { Authorization: `Bearer ${token}` } });
-      } catch (err) {
-        console.error('Reorder failed', err);
-        alert('Reorder failed');
+        // Persist order
+        const token = localStorage.getItem('token');
+        try {
+          await axios.post(`${apiBaseUrl}/drive/item/reorder`, { itemType: 'folder', folderId: currentFolder || null, orderedIds: newFolders.map(f=>f.id) }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (err) {
+          console.error('Reorder failed', err);
+          alert('Reorder failed');
+        }
+        return;
       }
-      return;
-    }
 
-    // Reordering within docs
-    if (over?.id && String(active.id).startsWith('doc-') && String(over.id).startsWith('doc-')) {
-      const activeId = String(active.id).replace('doc-', '');
-      const overId = String(over.id).replace('doc-', '');
-      const oldIndex = docs.findIndex((d) => d.id === activeId);
-      const newIndex = docs.findIndex((d) => d.id === overId);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-      const newDocs = arrayMove(docs, oldIndex, newIndex);
-      setDocs(newDocs);
+      // Reordering within files
+      if (over?.id && String(active.id).startsWith('file-') && String(over.id).startsWith('file-')) {
+        const activeId = String(active.id).replace('file-', '');
+        const overId = String(over.id).replace('file-', '');
+        const oldIndex = files.findIndex((f) => f.id === activeId);
+        const newIndex = files.findIndex((f) => f.id === overId);
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+        const newFiles = arrayMove(files, oldIndex, newIndex);
+        setFiles(newFiles);
 
-      const token = localStorage.getItem('token');
-      try {
-        await axios.post(`${apiBaseUrl}/drive/item/reorder`, { itemType: 'doc', folderId: currentFolder || null, orderedIds: newDocs.map(d=>d.id) }, { headers: { Authorization: `Bearer ${token}` } });
-      } catch (err) {
-        console.error('Reorder failed', err);
-        alert('Reorder failed');
+        // Persist order
+        const token = localStorage.getItem('token');
+        try {
+          await axios.post(`${apiBaseUrl}/drive/item/reorder`, { itemType: 'file', folderId: currentFolder || null, orderedIds: newFiles.map(f=>f.id) }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (err) {
+          console.error('Reorder failed', err);
+          alert('Reorder failed');
+        }
+        return;
       }
-      return;
+
+      // Reordering within docs
+      if (over?.id && String(active.id).startsWith('doc-') && String(over.id).startsWith('doc-')) {
+        const activeId = String(active.id).replace('doc-', '');
+        const overId = String(over.id).replace('doc-', '');
+        const oldIndex = docs.findIndex((d) => d.id === activeId);
+        const newIndex = docs.findIndex((d) => d.id === overId);
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+        const newDocs = arrayMove(docs, oldIndex, newIndex);
+        setDocs(newDocs);
+
+        const token = localStorage.getItem('token');
+        try {
+          await axios.post(`${apiBaseUrl}/drive/item/reorder`, { itemType: 'doc', folderId: currentFolder || null, orderedIds: newDocs.map(d=>d.id) }, { headers: { Authorization: `Bearer ${token}` } });
+        } catch (err) {
+          console.error('Reorder failed', err);
+          alert('Reorder failed');
+        }
+        return;
+      }
+    } finally {
+      // Clear dragging state regardless of outcome so hover behavior stabilizes
+      setDraggingId(null);
     }
+  };
+
+  const handleDragStart = (event: any) => {
+    setDraggingId(String(event.active?.id ?? null));
+  };
+
+  const handleDragCancel = () => {
+    setDraggingId(null);
   };
 
 
@@ -312,18 +445,33 @@ export default function DrivePage() {
         </button>
       )}
 
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragCancel={handleDragCancel}>
         <div className="grid grid-cols-4 gap-4">
-          {folders.map((folder) => (
-            <FolderCard key={folder.id} folder={folder} onOpen={() => fetchContents(folder.id)} />
-          ))}
+          <SortableContext 
+            items={folders.map(f => `folder-${f.id}`)} 
+            strategy={rectSortingStrategy}
+          >
+            {folders.map((folder) => (
+              <SortableDriveItem
+                key={folder.id}
+                id={folder.id}
+                type="folder"
+                name={folder.name}
+                onOpen={() => fetchContents(folder.id)}
+                draggingId={draggingId}
+              />
+            ))}
+          </SortableContext>
 
-          <SortableContext items={files.map(f => `file-${f.id}`)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={files.map(f => `file-${f.id}`)} strategy={rectSortingStrategy}>
             {files.map((file) => (
-              <SortableFile
+              <SortableDriveItem
                 key={file.id}
-                file={file}
-                onDownload={handleDownload}
+                id={file.id}
+                type="file"
+                name={file.name}
+                onDownload={() => handleDownload(file.id, file.name)}
+                draggingId={draggingId}
                 onDelete={async () => {
                   const token = localStorage.getItem('token');
                   try {
@@ -338,12 +486,32 @@ export default function DrivePage() {
             ))}
           </SortableContext>
 
-          <SortableContext items={docs.map(d => `doc-${d.id}`)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={docs.map(d => `doc-${d.id}`)} strategy={rectSortingStrategy}>
             {docs.map((doc) => (
-              <SortableDoc key={doc.id} doc={doc} />
+              <SortableDriveItem
+                key={doc.id}
+                id={doc.id}
+                type="doc"
+                name={doc.title}
+                draggingId={draggingId}
+              />
             ))}
           </SortableContext>
         </div>
+
+        <DragOverlay>
+          {draggingId ? (
+            <DriveItemUI
+              type={draggingId.startsWith('folder-') ? 'folder' : draggingId.startsWith('file-') ? 'file' : 'doc'}
+              name={
+                draggingId.startsWith('folder-') ? folders.find(f => `folder-${f.id}` === draggingId)?.name || '' :
+                draggingId.startsWith('file-') ? files.find(f => `file-${f.id}` === draggingId)?.name || '' :
+                docs.find(d => `doc-${d.id}` === draggingId)?.title || ''
+              }
+              isOverlay
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
