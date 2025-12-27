@@ -50,7 +50,7 @@ const FontSize = Extension.create({
   },
 });
 
-export default function Editor({ docId, initialContent }: { docId: string; initialContent: any }) {
+export default function Editor({ docId, initialContent, readOnly }: { docId: string; initialContent: any; readOnly?: boolean }) {
   const [saving, setSaving] = useState(false);
 
   const debouncedSave = useMemo(
@@ -103,9 +103,11 @@ export default function Editor({ docId, initialContent }: { docId: string; initi
   const editor = useEditor({
     extensions,
     content: safeInitialContent,
+    editable: !readOnly,
     onUpdate: ({ editor }) => {
-      debouncedSave(editor.getJSON());
+      if (!readOnly) debouncedSave(editor.getJSON());
     },
+    immediatelyRender: false,
   });
 
   useEffect(() => {
@@ -159,9 +161,11 @@ export default function Editor({ docId, initialContent }: { docId: string; initi
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-card">
-      <div className="sticky top-0 z-10 border-b bg-card px-8 py-2">
-        <EditorToolbar editor={editor} saving={saving} onExport={handleExport} />
-      </div>
+      {!readOnly && (
+        <div className="sticky top-0 z-10 border-b bg-card px-8 py-2">
+          <EditorToolbar editor={editor} saving={saving} onExport={handleExport} />
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-8">
         <EditorContent
           editor={editor}

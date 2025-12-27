@@ -9,6 +9,8 @@ interface DriveItemUIProps {
   onOpen?: () => void;
   onDownload?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
+  onView?: () => void;
   itemId?: string;
   onRename?: () => void;
   isDragging?: boolean;
@@ -26,6 +28,8 @@ export function DriveItemUI({
   onOpen,
   onDownload,
   onDelete,
+  onEdit,
+  onView,
   itemId,
   onRename,
   isDragging,
@@ -96,38 +100,84 @@ export function DriveItemUI({
 
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border bg-card shadow-lg z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
-                {type === 'folder' && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleAction(onOpen!); }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <ExternalLink size={14} /> Open
-                  </button>
-                )}
-                {type !== 'folder' && onDownload && (
-                  <button
-                    id={itemId ? `export-btn-${itemId}` : undefined}
-                    onClick={(e) => { e.stopPropagation(); handleAction(onDownload); }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
-                  >
-                    <Download size={14} /> Download
-                  </button>
-                )}
-                {onRename && (
-                   <button
-                   onClick={(e) => { e.stopPropagation(); handleAction(onRename); }}
-                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
-                 >
-                   <Edit2 size={14} /> Rename
-                 </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleAction(onDelete); }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
+                {type === 'folder' ? (
+                  <>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleAction(onOpen!); }}
+                      className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                    >
+                      <ExternalLink size={14} /> Open
+                    </button>
+                    {onRename && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onRename); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Edit2 size={14} /> Rename
+                      </button>
+                    )}
+                    {onDownload && (
+                      <button
+                        id={itemId ? `export-btn-${itemId}` : undefined}
+                        onClick={(e) => { e.stopPropagation(); handleAction(onDownload); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Download size={14} /> Export
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onDelete); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {onEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onEdit); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Edit2 size={14} /> Edit
+                      </button>
+                    )}
+                    {onView && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onView); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <ExternalLink size={14} /> View
+                      </button>
+                    )}
+                    {onRename && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onRename); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Edit2 size={14} /> Rename
+                      </button>
+                    )}
+                    {onDownload && (
+                      <button
+                        id={itemId ? `export-btn-${itemId}` : undefined}
+                        onClick={(e) => { e.stopPropagation(); handleAction(onDownload); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-foreground hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        <Download size={14} /> Export
+                      </button>
+                    )}
+                    {onDelete && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAction(onDelete); }}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             )}

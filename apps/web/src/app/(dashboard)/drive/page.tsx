@@ -35,6 +35,8 @@ function SortableDriveItem({
   onDownload,
   onDelete,
   onRename,
+  onEdit,
+  onView,
   draggingId,
 }: {
   id: string;
@@ -44,6 +46,8 @@ function SortableDriveItem({
   onDownload?: () => void;
   onDelete?: () => void;
   onRename?: () => void;
+  onEdit?: () => void;
+  onView?: () => void;
   draggingId?: string | null;
 }) {
   const {
@@ -73,6 +77,8 @@ function SortableDriveItem({
       onOpen={onOpen}
       onDownload={onDownload}
       onDelete={onDelete}
+      onEdit={onEdit}
+      onView={onView}
       onRename={onRename}
       isDragging={isActiveDrag}
       isDropTarget={isDropTarget}
@@ -424,8 +430,18 @@ export default function DrivePage() {
                 draggingId={draggingId}
                 onRename={() => {
                     const newName = prompt('New name:', folder.name);
-                    // TODO: Implement rename API
-                    alert('Rename not implemented yet');
+                    if (!newName || newName === folder.name) return;
+                    (async () => {
+                      const token = localStorage.getItem('token');
+                      try {
+                        await axios.put(`${apiBaseUrl}/drive/folder/${folder.id}`, { name: newName }, { headers: { Authorization: `Bearer ${token}` } });
+                        try { (window as any).toast?.('Folder renamed'); } catch (e) {}
+                        fetchContents(currentFolder);
+                      } catch (err) {
+                        console.error('Rename failed', err);
+                        alert('Rename failed');
+                      }
+                    })();
                 }}
                 onDelete={async () => {
                     const ok = confirm(`Delete folder "${folder.name}"? This will soft-delete contained files and documents.`);
@@ -453,6 +469,21 @@ export default function DrivePage() {
                 name={file.name}
                 onDownload={() => handleDownload(file.id, file.name)}
                 draggingId={draggingId}
+                onRename={() => {
+                  const newName = prompt('New name:', file.name);
+                  if (!newName || newName === file.name) return;
+                  (async () => {
+                    const token = localStorage.getItem('token');
+                    try {
+                      await axios.put(`${apiBaseUrl}/drive/file/${file.id}`, { name: newName }, { headers: { Authorization: `Bearer ${token}` } });
+                      try { (window as any).toast?.('File renamed'); } catch (e) {}
+                      fetchContents(currentFolder);
+                    } catch (err) {
+                      console.error('Rename failed', err);
+                      alert('Rename failed');
+                    }
+                  })();
+                }}
                 onDelete={async () => {
                   const token = localStorage.getItem('token');
                   try {
@@ -476,17 +507,31 @@ export default function DrivePage() {
                 type="doc"
                 name={doc.title}
                 draggingId={draggingId}
-                onOpen={() => {
-                    // Navigate to doc editor or focus if already open
+                onEdit={() => {
                     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
                     if (currentPath === `/docs/${doc.id}`) {
                       window.dispatchEvent(new CustomEvent('focus-doc', { detail: doc.id }));
                     } else {
-                      const router = useRouter();
                       router.push(`/docs/${doc.id}`);
                     }
                 }}
+                onView={() => router.push(`/docs/${doc.id}?view=1`)}
                 onDownload={() => handleExportDoc(doc.id, doc.title)}
+                onRename={() => {
+                  const newName = prompt('New title:', doc.title);
+                  if (!newName || newName === doc.title) return;
+                  (async () => {
+                    const token = localStorage.getItem('token');
+                    try {
+                      await axios.put(`${apiBaseUrl}/docs/${doc.id}`, { title: newName }, { headers: { Authorization: `Bearer ${token}` } });
+                      try { (window as any).toast?.('Document renamed'); } catch (e) {}
+                      fetchContents(currentFolder);
+                    } catch (err) {
+                      console.error('Rename failed', err);
+                      alert('Rename failed');
+                    }
+                  })();
+                }}
                 onDelete={async () => {
                     // TODO: Implement doc delete API
                      const token = localStorage.getItem('token');

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Editor from '@/components/Editor';
 
 export default function DocPage() {
   const { id } = useParams();
   const [doc, setDoc] = useState<any>(null);
+  const searchParams = useSearchParams();
+  const isView = searchParams?.get('view') === '1';
 
   useEffect(() => {
     const fetchDoc = async () => {
@@ -27,7 +29,7 @@ export default function DocPage() {
       <div className="p-6 pb-0">
         <h1 className="mb-4 text-2xl font-bold">{doc.title}</h1>
       </div>
-      <Editor docId={doc.id} initialContent={doc.content} />
+      <Editor docId={doc.id} initialContent={doc.content} readOnly={isView} />
     </div>
   );
 }
