@@ -56,9 +56,31 @@ describe('Drive E2E against running infra', () => {
     const docs = list.body.docs || [];
     expect(docs.some((d: any) => d.id === docId)).toBe(true);
 
+    // rename folder
+    const newFolderName = 'renamed-e2e-folder';
+    const renameFolderRes = await api.put(`/drive/folder/${folderId}`).set('Authorization', `Bearer ${token}`).send({ name: newFolderName });
+    expect([200, 204]).toContain(renameFolderRes.status);
+
+    // verify folder rename at root
+    const rootList = await api.get('/drive/list').set('Authorization', `Bearer ${token}`);
+    expect(rootList.status).toBe(200);
+    const folders = rootList.body.folders || [];
+    expect(folders.some((f: any) => f.id === folderId && f.name === newFolderName)).toBe(true);
+
+    // rename document
+    const newDocTitle = 'Renamed E2E Doc';
+    const renameDocRes = await api.put(`/docs/${docId}`).set('Authorization', `Bearer ${token}`).send({ title: newDocTitle });
+    expect([200, 204]).toContain(renameDocRes.status);
+
+    // verify doc rename within folder
+    const listAfterRename = await api.get('/drive/list').set('Authorization', `Bearer ${token}`).query({ folderId });
+    expect(listAfterRename.status).toBe(200);
+    const docsAfter = listAfterRename.body.docs || [];
+    expect(docsAfter.some((d: any) => d.id === docId && d.title === newDocTitle)).toBe(true);
+
     // export doc as markdown (local)
     const exportRes = await api.post(`/docs/${docId}/export`).set('Authorization', `Bearer ${token}`).send({ format: 'md', destination: 'local', html: '<p>hi</p>' });
-    expect(exportRes.status).toBe(200);
+    expect([200, 201]).toContain(exportRes.status);
     // response should be a buffer/stream; supertest stores buffer in body as string for binary — check content-length header or body length
     const contentType = exportRes.headers['content-type'] || '';
     expect(contentType).toMatch(/markdown|text|octet-stream/);

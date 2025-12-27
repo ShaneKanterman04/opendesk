@@ -146,6 +146,12 @@ export class DriveService {
     return this.prisma.file.update({ where: { id: fileId }, data: { deletedAt: new Date() } });
   }
 
+  async renameFile(userId: string, fileId: string, newName: string) {
+    const file = await this.prisma.file.findUnique({ where: { id: fileId } });
+    if (!file || file.ownerId !== userId) throw new NotFoundException('File not found');
+    return this.prisma.file.update({ where: { id: fileId }, data: { name: newName } });
+  }
+
   async deleteFolder(userId: string, folderId: string) {
     const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
     if (!folder || folder.ownerId !== userId) throw new NotFoundException('Folder not found');
@@ -166,6 +172,12 @@ export class DriveService {
     updates.push(this.prisma.folder.delete({ where: { id: folderId } }));
 
     return this.prisma.$transaction(updates);
+  }
+
+  async renameFolder(userId: string, folderId: string, newName: string) {
+    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
+    if (!folder || folder.ownerId !== userId) throw new NotFoundException('Folder not found');
+    return this.prisma.folder.update({ where: { id: folderId }, data: { name: newName } });
   }
 
   /** Move an item (file or document) into a folder (folderId can be null for root) */

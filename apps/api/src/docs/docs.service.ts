@@ -36,7 +36,7 @@ export class DocsService {
     return doc;
   }
 
-  async update(userId: string, id: string, content?: any, settings?: any) {
+  async update(userId: string, id: string, content?: any, settings?: any, title?: string) {
     const doc = await this.prisma.document.findUnique({ where: { id } });
     if (!doc || doc.ownerId !== userId) throw new NotFoundException();
 
@@ -45,6 +45,7 @@ export class DocsService {
       data: {
         ...(content !== undefined ? { content } : {}),
         ...(settings !== undefined ? { settings } : {}),
+        ...(title !== undefined ? { title } : {}),
       },
     });
   }

@@ -85,9 +85,9 @@ export class DocsController {
   async update(
     @Request() req,
     @Param('id') id: string,
-    @Body() body: { content?: any; settings?: any },
+    @Body() body: { content?: any; settings?: any; title?: string },
   ) {
-    return this.docsService.update(req.user.userId, id, body.content, body.settings);
+    return this.docsService.update(req.user.userId, id, body.content, body.settings, body.title);
   }
 
   @Get()

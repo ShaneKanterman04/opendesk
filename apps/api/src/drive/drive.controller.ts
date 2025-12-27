@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, UseGuards, Request, Query, Param, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Put, Body, UseGuards, Request, Query, Param, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
 import { Response } from 'express';
@@ -68,8 +68,18 @@ export class DriveController {
     return this.driveService.deleteFile(req.user.userId, fileId);
   }
 
+  @Put('file/:fileId')
+  async renameFile(@Request() req, @Param('fileId') fileId: string, @Body() body: { name: string }) {
+    return this.driveService.renameFile(req.user.userId, fileId, body.name);
+  }
+
   @Delete('folder/:folderId')
   async deleteFolder(@Request() req, @Param('folderId') folderId: string) {
     return this.driveService.deleteFolder(req.user.userId, folderId);
+  }
+
+  @Put('folder/:folderId')
+  async renameFolder(@Request() req, @Param('folderId') folderId: string, @Body() body: { name: string }) {
+    return this.driveService.renameFolder(req.user.userId, folderId, body.name);
   }
 }
