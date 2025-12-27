@@ -1,0 +1,6 @@
+FROM node:20-alpine
+
+# Base image with heavy runtime deps (LibreOffice + fonts) used for DOCX->PDF conversion
+RUN apk add python3 make g++ libreoffice fontconfig ttf-dejavu ttf-freefont netcat-openbsd
+
+LABEL org.opendesk.base="true"
