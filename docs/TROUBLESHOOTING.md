@@ -486,6 +486,46 @@ docker compose -f infra/docker/compose.yml build --verbose
 
 ---
 
+### Symptom: PDF export renders boxed characters (missing glyphs)
+
+```
+PDF output shows rectangular/boxed characters instead of expected text/glyphs.
+```
+
+**Cause:** The DOCX→PDF conversion (via `flex-conv`/LibreOffice) cannot find suitable system fonts inside the API container and substitutes missing glyphs.
+
+**Quick fixes / diagnosis:**
+
+- Rebuild the API image with common TTF fonts installed. In this project we add `fontconfig`, `ttf-dejavu`, and `ttf-freefont` to the API image so LibreOffice can find fonts:
+
+```dockerfile
+# apps/api/Dockerfile (example)
+RUN apk add --no-cache python3 make g++ libreoffice fontconfig ttf-dejavu ttf-freefont
+```
+
+- Rebuild and restart the API:
+
+```bash
+docker compose -f infra/docker/compose.yml build api
+docker compose -f infra/docker/compose.yml up -d api
+```
+
+- For a quick test (without rebuilding), you can install fonts into a running API container:
+
+```bash
+docker exec -it opendesk-api sh
+apk add --no-cache fontconfig ttf-dejavu ttf-freefont
+# re-run your export request and check behavior
+```
+
+- Check API logs for `flex-conv output` or errors from the export endpoint:
+
+```bash
+docker logs opendesk-api | tail -n 200
+```
+
+If this does not resolve the issue, please capture the PDF produced and the `docker logs` output and attach them for further debugging.
+
 ## Frontend Issues
 
 ### Symptom: "Cannot GET /"

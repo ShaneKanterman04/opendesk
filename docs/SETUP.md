@@ -47,6 +47,32 @@ cd opendesk
 7. ✅ Runs Prisma migrations to initialize the database schema
 8. ✅ Displays running containers and logs instructions
 
+**Faster local iterations:**
+- Use `./scripts/up.sh --fast` to skip image builds and migrations for rapid iterative development (useful when you haven't changed Dockerfiles or DB schema).
+- Alternatively use `./scripts/up.sh --skip-build` to skip image builds only, or `./scripts/up.sh --skip-migrate` to skip migrations.
+
+Examples:
+```bash
+# Full (default): builds and migrates
+./scripts/up.sh
+
+# Fast dev loop (no rebuild, no migration)
+./scripts/up.sh --fast
+
+# Skip only builds
+./scripts/up.sh --skip-build
+
+# Skip only migrations
+./scripts/up.sh --skip-migrate
+
+# Dev build (faster image build, disables heavy extras like libreoffice/fonts)
+./scripts/up.sh --dev-build
+
+# Prebuild base image (recommended on first run or CI/cache warmup)
+# This builds a base image with LibreOffice & fonts used for DOCX→PDF; useful to avoid reinstalling heavy packages on every build
+./scripts/up.sh --ensure-base
+```
+
 **After startup, access:**
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
@@ -311,6 +337,10 @@ Verify all services are working correctly:
 4. ✅ Document creation in a folder
 5. ✅ Document listing in drive
 6. ✅ Document retrieval
+7. ✅ Markdown export (`/docs/:id/export` format=md)
+8. ✅ DOCX export (`/docs/:id/export` format=docx)
+
+> Note: PDF export requires LibreOffice present in the API container (installed in the default build or the `opendesk-api-base` image). If you are using `--dev-build` or `--fast` that skips installing LibreOffice, PDF export may fail.
 
 **Output:**
 ```
