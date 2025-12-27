@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function EditorToolbar({ editor, saving }: { editor: any; saving: boolean }) {
+export default function EditorToolbar({ editor, saving, onExport }: { editor: any; saving: boolean; onExport: (format: string, destination: string) => void }) {
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [exportDest, setExportDest] = useState('local');
+
   if (!editor) return null;
 
   const setLink = () => {
@@ -216,15 +219,43 @@ export default function EditorToolbar({ editor, saving }: { editor: any; saving:
         </button>
       </div>
 
-      <div className="text-xs font-medium text-muted-foreground ml-4 whitespace-nowrap">
-        {saving ? (
-          <span className="flex items-center gap-1">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></span>
-            Saving...
-          </span>
-        ) : (
-          <span className="text-green-600">✓ Saved</span>
-        )}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 border-r pr-2 mr-2">
+           <select 
+             value={exportFormat} 
+             onChange={e => setExportFormat(e.target.value)} 
+             className="border rounded px-1 py-0.5 text-xs bg-white"
+           >
+             <option value="pdf">PDF</option>
+             <option value="docx">DOCX</option>
+             <option value="md">MD</option>
+           </select>
+           <select 
+             value={exportDest} 
+             onChange={e => setExportDest(e.target.value)} 
+             className="border rounded px-1 py-0.5 text-xs bg-white"
+           >
+             <option value="local">Download</option>
+             <option value="drive">Drive</option>
+           </select>
+           <button 
+             onClick={() => onExport(exportFormat, exportDest)} 
+             className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 border rounded text-xs"
+           >
+             Export
+           </button>
+        </div>
+
+        <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+          {saving ? (
+            <span className="flex items-center gap-1">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></span>
+              Saving...
+            </span>
+          ) : (
+            <span className="text-green-600">✓ Saved</span>
+          )}
+        </div>
       </div>
     </div>
   );

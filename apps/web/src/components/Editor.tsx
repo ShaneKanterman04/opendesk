@@ -73,40 +73,71 @@ export default function Editor({ docId, initialContent }: { docId: string; initi
     [docId]
   );
 
+  const extensions = useMemo(() => [
+    StarterKit,
+    TextStyle,
+    FontSize,
+    Color,
+    Underline,
+    Highlight.configure({ multicolor: true }),
+    TaskList,
+    TaskItem.configure({ nested: true }),
+    Table.configure({ resizable: true }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    TextAlign.configure({ types: ['heading', 'paragraph'] }),
+    Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-blue-600 underline cursor-pointer' } }),
+    Placeholder.configure({ placeholder: 'Start typing...' }),
+  ], []);
+
+  const safeInitialContent = useMemo(() => {
+    try {
+      if (initialContent && initialContent.type === 'doc') return initialContent;
+    } catch (e) {
+      // fallthrough
+    }
+    return { type: 'doc', content: [{ type: 'paragraph' }] };
+  }, [initialContent]);
+
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      TextStyle,
-      FontSize,
-      Color,
-      Underline,
-      Highlight.configure({ multicolor: true }),
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Table.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-blue-600 underline cursor-pointer',
-        },
-      }),
-      Placeholder.configure({
-        placeholder: 'Start typing...',
-      }),
-    ],
-    content: initialContent,
+    extensions,
+    content: safeInitialContent,
     onUpdate: ({ editor }) => {
       debouncedSave(editor.getJSON());
     },
   });
+
+  const handleExport = async (format: string, destination: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const html = editor.getHTML();
+      const response = await axios.post(
+        `http://localhost:3001/docs/${docId}/export`,
+        { format, destination, html },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: destination === 'local' ? 'blob' : 'json',
+        }
+      );
+
+      if (destination === 'local') {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        const extension = format === 'md' ? 'md' : format;
+        link.setAttribute('download', `export.${extension}`); 
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        alert('Saved to Drive!');
+      }
+    } catch (error) {
+      console.error('Export failed', error);
+      alert('Export failed');
+    }
+  };
 
   if (!editor) {
     return null;
@@ -115,7 +146,7 @@ export default function Editor({ docId, initialContent }: { docId: string; initi
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-card">
       <div className="sticky top-0 z-10 border-b bg-card px-8 py-2">
-        <EditorToolbar editor={editor} saving={saving} />
+        <EditorToolbar editor={editor} saving={saving} onExport={handleExport} />
       </div>
       <div className="flex-1 overflow-y-auto p-8">
         <EditorContent
