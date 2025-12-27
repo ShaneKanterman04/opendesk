@@ -154,7 +154,9 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String   # bcrypt hash
+  isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 ```
 
@@ -173,6 +175,9 @@ model User {
 - `DELETE /docs/:id` — Delete document
 - `GET /docs` — List user's documents
 
+Additional operations:
+- `POST /docs/:id/export` — Export a document to `pdf|docx|md` and either download or save to Drive (accepts `destination` and optional `folderId`).
+
 **Database Interaction**:
 ```prisma
 model Document {
@@ -182,6 +187,8 @@ model Document {
   ownerId   String   # User who owns the document
   folderId  String?  # Optional folder placement
   settings  Json?    # Theme, fontSize, fontFamily
+  sortOrder Int?     @map("sort_order") // Optional numeric order for ordering inside a folder
+  deletedAt DateTime? // Soft-delete timestamp
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -200,6 +207,18 @@ model Document {
 - `GET /drive/folders/:id/children` — List subfolder contents
 - `POST /drive/folders/:id/files` — Upload file to folder
 - `GET /drive/list` — List all contents (folders, documents, files) for a user
+
+Additional operations / API notes:
+- `GET /drive/list` — List user's drive contents (supports `folderId` query).
+- `GET /drive/debug` — Internal debug query endpoint (not for production).
+- `POST /drive/upload/init` — Initialize an upload, returns a file entry with `file.id` and presigned info.
+- `POST /drive/upload/finalize` — Finalize an upload (noop in this codebase; returns `{status: 'ok'}`).
+- `POST /drive/upload/:fileId` — Multipart upload of the file content (accepts `file` field).
+- `GET /drive/file/:fileId` — Stream/download a file by id.
+- `POST /drive/item/move` — Move a `file` or `doc` into another folder.
+- `POST /drive/item/reorder` — Reorder items inside a folder by providing `orderedIds`.
+- `DELETE /drive/file/:fileId` — Soft-delete a file (sets `deletedAt`).
+- `DELETE /drive/folder/:folderId` — Delete a folder.
 
 **Database Interaction**:
 ```prisma
@@ -238,12 +257,15 @@ model File {
 **Implementation Details**:
 ```typescript
 // Uses minio npm package for S3-compatible storage
+// The service creates/uses a bucket named `opendesk-files` and ensures it exists on module init.
 const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT,
-  port: parseInt(process.env.MINIO_PORT),
-  accessKey: process.env.MINIO_ACCESS_KEY,
-  secretKey: process.env.MINIO_SECRET_KEY,
+  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+  port: parseInt(process.env.MINIO_PORT || '9000'),
+  useSSL: process.env.MINIO_USE_SSL === 'true',
+  accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+  secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
 });
+// onModuleInit will call `bucketExists` and `makeBucket` if needed.
 ```
 
 #### 5. Prisma Module 🗄️
@@ -386,7 +408,9 @@ export const api = {
 │ id (PK)             │
 │ email (UNIQUE)      │
 │ password            │
+│ isAdmin             │
 │ createdAt           │
+│ updatedAt           │
 │ updatedAt           │
 └──────┬──────┬───────┘
        │      │
