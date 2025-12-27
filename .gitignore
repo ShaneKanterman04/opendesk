@@ -5,3 +5,6 @@ build
 .turbo
 .DS_Store
 .github
+.github/
+.vscode
+.vscode/
